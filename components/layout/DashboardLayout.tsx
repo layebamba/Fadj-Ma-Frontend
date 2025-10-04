@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,9 +22,33 @@ const navigation: NavItem[] = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [globalSearch, setGlobalSearch] = useState('');
+    const [currentTime, setCurrentTime] = useState('');
+
     const pathname = usePathname();
     const { user, logout } = useAuth();
+    useEffect(() => {
+        const updateTime = () => {
+            const now = new Date();
+            const date = now.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            const time = now.toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            setCurrentTime(`${date} - ${time}`);
+        };
+
+        updateTime();
+        const interval = setInterval(updateTime, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -41,17 +65,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </div>
 
                         {/* User Info */}
-                        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-700">
-                            <img
-                                src={user?.avatar || '/default-avatar.png'}
-                                alt="Avatar"
-                                className="w-12 h-12 rounded-full"
-                            />
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">{user?.full_name}</p>
-                                <p className="text-xs text-yellow-400">{user?.role_display}</p>
+                        <div className="px-4 py-4 border-b border-gray-700">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={user?.avatar || '/default-avatar.png'}
+                                    alt="Avatar"
+                                    className="w-12 h-12 rounded-full object-cover"
+                                />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{user?.full_name}</p>
+                                    <p className="text-xs text-yellow-400">{user?.role_display}</p>
+                                </div>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                        className="text-white hover:text-gray-300"
+                                    >
+                                        ⋮
+                                    </button>
+
+                                    {/* Dropdown Menu Mobile */}
+                                    {userMenuOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+                                            <Link
+                                                href="/dashboard/profile"
+                                                onClick={() => {
+                                                    setUserMenuOpen(false);
+                                                    setSidebarOpen(false);
+                                                }}
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            >
+                                                Mon profil
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <button className="text-white">⋮</button>
                         </div>
 
                         {/* Navigation */}
@@ -103,17 +152,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     {/* User Info */}
-                    <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-700">
-                        <img
-                            src={user?.avatar || '/default-avatar.png'}
-                            alt="Avatar"
-                            className="w-12 h-12 rounded-full"
-                        />
-                        <div className="flex-1">
-                            <p className="text-sm font-medium">{user?.full_name}</p>
-                            <p className="text-xs text-yellow-400">{user?.role_display}</p>
+                    <div className="px-4 py-4 border-b border-gray-700">
+                        <div className="flex items-center gap-3">
+                            {user?.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt="Avatar"
+                                    className="w-12 h-12 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                                    {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                            )}
+                            <div className="flex-1">
+                                <p className="text-sm font-medium">{user?.full_name}</p>
+                                <p className="text-xs text-yellow-400">{user?.role_display}</p>
+                            </div>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                    className="text-white hover:text-gray-300"
+                                >
+                                    ⋮
+                                </button>
+
+                                {/* Dropdown Menu Desktop */}
+                                {userMenuOpen && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setUserMenuOpen(false)}
+                                        />
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+                                            <Link
+                                                href="/dashboard/profile"
+                                                onClick={() => setUserMenuOpen(false)}
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                            >
+                                                Mon profil
+                                            </Link>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <button className="text-white">⋮</button>
                     </div>
 
                     {/* Navigation */}
@@ -202,15 +285,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         {/* Date et heure */}
                         <div className="hidden lg:block text-sm text-gray-600">
-                            {new Date().toLocaleDateString('fr-FR', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                            })} - {new Date().toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        })}
+                            {currentTime || 'Chargement...'}
                         </div>
 
                         {/* Bouton déconnexion */}

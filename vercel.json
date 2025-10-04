@@ -1,23 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "next.config.js",
-      "use": "@vercel/next"
-    }
-  ],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://fadj-ma-g0kp.onrender.com/api"
-  },
   "git": {
     "deploymentBranch": "master"
   },
-"routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

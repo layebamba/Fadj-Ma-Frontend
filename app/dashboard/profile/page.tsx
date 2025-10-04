@@ -107,10 +107,10 @@ export default function ProfilePage() {
 
         try {
             setSaving(true);
-            const formData = new FormData();
-            formData.append('avatar', avatarFile);
+            const formDataToSend = new FormData();
+            formDataToSend.append('avatar', avatarFile);
 
-            const response = await api.put('/auth/profile/', formData, {
+            const response = await api.patch('/auth/profile/', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -119,7 +119,6 @@ export default function ProfilePage() {
             setUser(response.data);
             setAvatarPreview(response.data.avatar);
 
-            // Mettre à jour le contexte d'authentification
             if (updateUser) {
                 updateUser(response.data);
             }

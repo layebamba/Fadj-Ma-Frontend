@@ -54,20 +54,27 @@ export default function DashboardPage() {
 
     const fetchStats = async () => {
         try {
-            const [medicines, groups, suppliers, clients, sales, users] = await Promise.all([
+            const [medicines, groups, suppliers, clients, sales] = await Promise.all([
                 api.get('/medicines/'),
                 api.get('/medicine-groups/'),
                 api.get('/suppliers/'),
                 api.get('/clients/'),
                 api.get('/sales/stats/'),
-                api.get('/users/').catch(() => ({ data: [] })),
             ]);
+
+            let usersCount = 0;
+            try {
+                const users = await api.get('/users/');
+                const usersList = users.data.results || users.data;
+                usersCount = Array.isArray(usersList) ? usersList.length : 0;
+            } catch (error) {
+                console.log('Users endpoint not available');
+            }
 
             const medicinesList = medicines.data.results || medicines.data;
             const groupsList = groups.data.results || groups.data;
             const suppliersList = suppliers.data.results || suppliers.data;
             const clientsList = clients.data.results || clients.data;
-            const usersList = users.data.results || users.data;
 
             const lowStock = medicinesList.filter((m: any) => m.is_low_stock).length;
             const available = medicinesList.filter((m: any) => m.stock_quantity > 0).length;
@@ -81,7 +88,7 @@ export default function DashboardPage() {
                 groupsCount: groupsList.length,
                 suppliersCount: suppliersList.length,
                 clientsCount: clientsList.length,
-                usersCount: Array.isArray(usersList) ? usersList.length : 0,
+                usersCount: usersCount,  // ← Gardez seulement celui-ci
                 inventoryStatus,
                 salesReport: {
                     quantitySold: sales.data.quantity_sold || 70856,
