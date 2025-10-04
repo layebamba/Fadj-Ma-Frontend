@@ -9,7 +9,10 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "https://fadj-ma-g0kp.onrender.com/api"
   },
-  "routes": [
+  "git": {
+    "deploymentBranch": "master"
+  },
+"routes": [
     {
       "src": "/api/(.*)",
       "dest": "/api/$1"
