@@ -5,11 +5,20 @@ import Link from 'next/link';
 import {usePathname, useRouter} from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {isAdmin} from "@/lib/roleUtils";
+import { useRef } from 'react';
+import api from "@/lib/api";
 
 interface NavItem {
     name: string;
     href: string;
     icon: string;
+}
+interface SearchResult {
+    id: number;
+    name: string;
+    type: 'medicine' | 'client' | 'supplier' | 'group';
+    link: string;
+    subtitle?: string;
 }
 
 const navigation: NavItem[] = [
@@ -26,6 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [globalSearch, setGlobalSearch] = useState('');
     const [currentTime, setCurrentTime] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [showResults, setShowResults] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
     const pathname = usePathname();
@@ -57,7 +70,99 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
     }, [user,router]);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    // Fonction de recherche
+    useEffect(() => {
+        const searchTimeout = setTimeout(async () => {
+            if (globalSearch.trim().length < 2) {
+                setSearchResults([]);
+                setShowResults(false);
+                return;
+            }
 
+            setSearching(true);
+            setShowResults(true);
+
+            try {
+                const searchTerm = globalSearch.toLowerCase();
+                const results: SearchResult[] = [];
+
+                // Rechercher dans médicaments
+                const medicinesRes = await api.get('/medicines/');
+                const medicines = medicinesRes.data.results || medicinesRes.data;
+                medicines
+                    .filter((m: any) =>
+                        m?.name?.toLowerCase().includes(searchTerm) ||
+                        m?.medicine_id?.toLowerCase().includes(searchTerm)
+                    )
+                    .slice(0, 3)
+                    .forEach((m: any) => {
+                        if (m?.name) {
+                            results.push({
+                                id: m.id,
+                                name: m.name,
+                                type: 'medicine',
+                                link: `/dashboard/medicines/${m.id}`,
+                                subtitle: `ID: ${m.medicine_id || ''}`
+                            });
+                        }
+                    });
+
+                // Rechercher dans clients
+                const clientsRes = await api.get('/clients/');
+                const clients = clientsRes.data.results || clientsRes.data;
+                clients
+                    .filter((c: any) => c?.name?.toLowerCase().includes(searchTerm))
+                    .slice(0, 3)
+                    .forEach((c: any) => {
+                        if (c?.name) {
+                            results.push({
+                                id: c.id,
+                                name: c.name,
+                                type: 'client',
+                                link: `/dashboard/clients/${c.id}`,
+                                subtitle: c.phone || ''
+                            });
+                        }
+                    });
+
+                // Rechercher dans fournisseurs
+                const suppliersRes = await api.get('/suppliers/');
+                const suppliers = suppliersRes.data.results || suppliersRes.data;
+                suppliers
+                    .filter((s: any) => s?.name?.toLowerCase().includes(searchTerm))
+                    .slice(0, 3)
+                    .forEach((s: any) => {
+                        if (s?.name) {
+                            results.push({
+                                id: s.id,
+                                name: s.name,
+                                type: 'supplier',
+                                link: `/dashboard/suppliers/${s.id}`,
+                                subtitle: s.phone || ''
+                            });
+                        }
+                    });
+
+                setSearchResults(results);
+            } catch (error) {
+                console.error('Search error:', error);
+                setSearchResults([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(searchTimeout);
+    }, [globalSearch]);
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Sidebar mobile */}
@@ -266,7 +371,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </button>
 
                     {/* Recherche globale - centrée */}
-                    <div className="flex-1 flex items-center px-4">
+                    <div className="flex-1 flex items-center px-4" ref={searchRef}>
                         <div className="relative w-full max-w-xl">
                             <input
                                 type="text"
@@ -278,9 +383,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 absolute right-3 top-2.5 text-gray-400">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                             </svg>
+
+                            {/* Résultats de recherche */}
+                            {showResults && (
+                                <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                                    {searching ? (
+                                        <div className="p-4 text-center text-gray-500">Recherche...</div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className="py-2">
+                                            {searchResults.map((result) => (
+                                                <Link
+                                                    key={`${result.type}-${result.id}`}
+                                                    href={result.link}
+                                                    onClick={() => {
+                                                        setShowResults(false);
+                                                        setGlobalSearch('');
+                                                    }}
+                                                    className="block px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                    <span className="text-xl">
+                                        {result.type === 'medicine' && '💊'}
+                                        {result.type === 'client' && '👤'}
+                                        {result.type === 'supplier' && '🏢'}
+                                        {result.type === 'group' && '📁'}
+                                    </span>
+                                                        <div>
+                                                            <div className="font-medium text-gray-900">{result.name}</div>
+                                                            {result.subtitle && (
+                                                                <div className="text-xs text-gray-500">{result.subtitle}</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 text-center text-gray-500">Aucun résultat trouvé</div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
-
                     {/* Actions à droite */}
                     <div className="flex items-center gap-4">
                         {/* Sélecteur de langue */}
