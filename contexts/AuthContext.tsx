@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
     logout: () => Promise<void>;
     register: (data: any) => Promise<void>;
     updateUser: (data: Partial<User>) => Promise<void>;
@@ -42,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await authService.login({ email, password });
         const userData = await authService.getProfile();
         setUser(userData);
-        router.push('/dashboard');
+        return userData;
+       // router.push('/dashboard');
     };
 
     const logout = async () => {

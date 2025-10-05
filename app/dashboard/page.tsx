@@ -88,7 +88,7 @@ export default function DashboardPage() {
                 groupsCount: groupsList.length,
                 suppliersCount: suppliersList.length,
                 clientsCount: clientsList.length,
-                usersCount: usersCount,  // ← Gardez seulement celui-ci
+                usersCount: usersCount,
                 inventoryStatus,
                 salesReport: {
                     quantitySold: sales.data.quantity_sold || 70856,
@@ -106,8 +106,32 @@ export default function DashboardPage() {
         }
     };
 
-    const handleDownloadReport = () => {
-        alert('Téléchargement du rapport en cours...');
+    const handleDownloadReport = async () => {
+        try {
+            const response = await api.get('/reports/dashboard/', {
+                responseType: 'blob',
+            });
+
+            // Créer un blob avec le PDF reçu
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            // Nom du fichier avec la date
+            const filename = `rapport_dashboard_${new Date().toISOString().split('T')[0]}.pdf`;
+
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+
+            // Nettoyer
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading report:', error);
+            alert('Erreur lors du téléchargement du rapport');
+        }
     };
 
     if (loading) {
@@ -156,7 +180,7 @@ export default function DashboardPage() {
                                 </svg>
                             </div>
                             <div className="text-3xl font-bold text-gray-900">{stats.inventoryStatus.status}</div>
-                            <div className="text-sm text-gray-600">Statut de l'inventaire</div>
+                            <div className="text-sm text-gray-600">Statut de l&apos;inventaire</div>
                         </div>
                         <div className="border-t border-gray-200 px-6 py-3 h-14 bg-green-500">
                             <Link
@@ -219,7 +243,7 @@ export default function DashboardPage() {
                                 href="/dashboard/medicines"
                                 className="w-full text-sm text-gray-800 hover:text-gray-900 flex items-center justify-center gap-1"
                             >
-                                Visiter l'inventaire
+                                Visiter l&apos;inventaire
                                 <span>≫</span>
                             </Link>
                         </div>
@@ -325,7 +349,7 @@ export default function DashboardPage() {
                                 <div className="text-4xl font-bold text-gray-900 mb-1">
                                     {stats.usersCount.toString().padStart(2, '0')}
                                 </div>
-                                <div className="text-sm text-gray-600">Nombre total d'utilisateurs</div>
+                                <div className="text-sm text-gray-600">Nombre total d&apos;utilisateurs</div>
                             </div>
                         </div>
                     </div>

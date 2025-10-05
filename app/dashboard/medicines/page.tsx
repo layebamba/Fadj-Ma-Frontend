@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
+import {isAdmin} from "@/lib/roleUtils";
+import {useAuth} from "@/contexts/AuthContext";
+
 
 interface Medicine {
     id: number;
@@ -33,7 +36,8 @@ export default function MedicinesPage() {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
     const [toDelete, setToDelete] = useState<Medicine | null>(null);
-
+    const { user } = useAuth();
+    const userIsAdmin = user ? isAdmin(user) : false;
     // Filtres et pagination
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedGroup, setSelectedGroup] = useState<string>('');
@@ -128,13 +132,19 @@ export default function MedicinesPage() {
                         <h1 className="text-2xl font-bold text-gray-900">médicaments ({filteredMedicines.length})</h1>
                         <p className="text-sm text-gray-600">Liste des médicaments disponibles à la vente.</p>
                     </div>
-                    <Link
-                        href="/dashboard/medicines/create"
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    <button
+                        onClick={() => userIsAdmin && (window.location.href = '/dashboard/medicines/create')}
+                        disabled={!userIsAdmin}
+                        className={`flex items-center gap-2 px-4 py-2 rounded ${
+                            userIsAdmin
+                                ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={!userIsAdmin ? 'Action réservée aux administrateurs' : ''}
                     >
                         <span>+</span>
                         Nouveau médicament
-                    </Link>
+                    </button>
                 </div>
 
                 {/* Filtres */}
@@ -224,15 +234,24 @@ export default function MedicinesPage() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                         </Link>
-
-                                        <Link href={`/dashboard/medicines/edit/${medicine.id}`} title="Modifier">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-yellow-600 hover:text-yellow-800 cursor-pointer">
+                                        <button
+                                            onClick={() => userIsAdmin && (window.location.href = `/dashboard/medicines/edit/${medicine.id}`)}
+                                            disabled={!userIsAdmin}
+                                            title={!userIsAdmin ? 'Action réservée aux administrateurs' : 'Modifier'}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+                                                 className={`w-5 h-5 ${userIsAdmin ? 'text-yellow-600 hover:text-yellow-800 cursor-pointer' : 'text-gray-400 cursor-not-allowed'}`}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                                             </svg>
-                                        </Link>
+                                        </button>
 
-                                        <button onClick={() => confirmDelete(medicine)} title="Supprimer">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer">
+                                        <button
+                                            onClick={() => userIsAdmin && confirmDelete(medicine)}
+                                            disabled={!userIsAdmin}
+                                            title={!userIsAdmin ? 'Action réservée aux administrateurs' : 'Supprimer'}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
+                                                 className={`w-5 h-5 ${userIsAdmin ? 'text-red-600 hover:text-red-800 cursor-pointer' : 'text-gray-400 cursor-not-allowed'}`}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                             </svg>
                                         </button>
