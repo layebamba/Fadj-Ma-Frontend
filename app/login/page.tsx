@@ -8,7 +8,7 @@ export default function LoginPage() {
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { login, register } = useAuth();
+    const { login, register, user} = useAuth();
     const router = useRouter();
 
     // Login form state
@@ -36,7 +36,12 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await login(loginData.email, loginData.password);
+            const userData = await login(loginData.email, loginData.password);
+            if (userData.role === 'ADMIN' || userData.role === 'admin') {
+                router.push('/dashboard');
+            } else {
+                router.push('dashboard/medicines');
+            }
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Erreur de connexion');
         } finally {

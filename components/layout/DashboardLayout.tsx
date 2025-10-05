@@ -2,8 +2,9 @@
 
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import {isAdmin} from "@/lib/roleUtils";
 
 interface NavItem {
     name: string;
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [globalSearch, setGlobalSearch] = useState('');
     const [currentTime, setCurrentTime] = useState('');
+    const router = useRouter();
 
     const pathname = usePathname();
     const { user, logout } = useAuth();
@@ -48,7 +50,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const interval = setInterval(updateTime, 1000);
 
         return () => clearInterval(interval);
-    }, []);
+        if (!user) {
+            router.push('/login');
+        } else if (!isAdmin(user)) {
+            router.push('/medicines');
+        }
+
+    }, [user,router]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -105,22 +113,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         {/* Navigation */}
                         <nav className="flex-1 px-2 py-4 overflow-y-auto">
-                            {navigation.map((item) => {
-                                const isActive = pathname === item.href;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        onClick={() => setSidebarOpen(false)}
-                                        className={`flex items-center gap-3 rounded px-3 py-2 text-sm ${
-                                            isActive ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                                        }`}
-                                    >
-                                        <span>{item.icon}</span>
-                                        {item.name}
-                                    </Link>
-                                );
-                            })}
+                            {navigation
+                                .filter((item) => {
+                                    if (user && isAdmin(user)) return true;
+                                    return item.href === '/dashboard/medicines';
+                                })
+                                .map((item) => {
+                                    const isActive = pathname === item.href;
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            onClick={() => setSidebarOpen(false)}
+                                            className={`flex items-center gap-3 rounded px-3 py-2 text-sm ${
+                                                isActive ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            <span>{item.icon}</span>
+                                            {item.name}
+                                        </Link>
+                                    );
+                                })}
                         </nav>
 
                         {/* Footer Déconnexion */}
@@ -201,23 +214,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     {/* Navigation */}
                     <nav className="flex-1 px-2 py-4 overflow-y-auto">
-                        {navigation.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`flex items-center gap-3 rounded px-3 py-2 text-sm ${
-                                        isActive ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700'
-                                    }`}
-                                >
-                                    <span>{item.icon}</span>
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
+                        {navigation
+                            .filter((item) => {
+                                if (user && isAdmin(user)) return true;
+                                return item.href === '/dashboard/medicines';
+                            })
+                            .map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        className={`flex items-center gap-3 rounded px-3 py-2 text-sm ${
+                                            isActive ? 'bg-teal-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        <span>{item.icon}</span>
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
                     </nav>
-
                     {/* Footer Déconnexion */}
                     <div className="border-t border-gray-700">
                         <button

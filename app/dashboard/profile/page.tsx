@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
+import {useRouter} from "next/navigation";
 
 interface UserProfile {
     id: number;
@@ -19,6 +20,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+    const router = useRouter();
     const { user: authUser, updateUser } = useAuth();
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -79,6 +81,9 @@ export default function ProfilePage() {
             }
 
             alert('Profil mis à jour avec succès');
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 500);
         } catch (error) {
             console.error('Error updating profile:', error);
             alert('Erreur lors de la mise à jour du profil');
