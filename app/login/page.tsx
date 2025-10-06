@@ -62,6 +62,9 @@ export default function LoginPage() {
 
         try {
             await register(registerData);
+            setTimeout(() => {
+                router.push('/dashboard/medicines');
+            }, 1500);
         } catch (err: any) {
             setError(err.response?.data?.email?.[0] || err.response?.data?.detail || 'Erreur d\'inscription');
         } finally {
